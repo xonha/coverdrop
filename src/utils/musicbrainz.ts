@@ -35,6 +35,7 @@ export async function getReleaseGroup(id: string): Promise<MusicBrainzReleaseGro
 export async function getCoverArtUrls(releaseId: string): Promise<string[]> {
   try {
     const res = await fetch(`${COVERART_URL}/release/${releaseId}/`, {
+      redirect: 'follow',
       headers: {
         'User-Agent': 'CoverDrop/1.0 (https://github.com/xonha/CoverDrop)',
         'Accept': 'application/json'
