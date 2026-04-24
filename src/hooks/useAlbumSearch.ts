@@ -53,10 +53,6 @@ export function useAlbumSearch() {
     setSelectedGroupId(null)
   }
   
-  const loadAlbumById = (groupId: string) => {
-    setSelectedGroupId(groupId)
-  }
-  
   return {
     results: searchResults,
     selectedAlbum,
@@ -64,7 +60,6 @@ export function useAlbumSearch() {
     searching,
     search,
     selectAlbum,
-    clearSelection,
-    loadAlbumById
+    clearSelection
   }
 }
