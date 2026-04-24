@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { searchReleases, getReleaseGroup, getRelease, getCoverArtUrl } from '../utils/musicbrainz'
+import { useState, useMemo } from 'react'
+import { useSearchReleases, useReleaseGroup, useRelease, useCoverArtUrl } from '../utils/musicbrainz'
 import type { MusicBrainzReleaseGroup, MusicBrainzRelease, MusicBrainzTrack } from '../types/musicbrainz'
 
 export interface AlbumData {
@@ -9,97 +9,58 @@ export interface AlbumData {
 }
 
 export function useAlbumSearch() {
-  const [results, setResults] = useState<MusicBrainzReleaseGroup[]>([])
-  const [selectedAlbum, setSelectedAlbum] = useState<AlbumData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [searching, setSearching] = useState(false)
-
-  const search = useCallback(async (query: string) => {
-    if (!query.trim()) return
-    setSearching(true)
-    setResults([])
-    setSelectedAlbum(null)
-    try {
-      const groups = await searchReleases(query)
-      setResults(groups)
-    } catch (e) {
-      console.error('Search failed:', e)
+  const [query, setQuery] = useState('')
+  
+  const { data: searchResults = [], isLoading: searching } = useSearchReleases(query)
+  
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  
+  const { data: releaseGroup } = useReleaseGroup(selectedGroupId || undefined)
+  const releaseId = releaseGroup?.releases?.[0]?.id
+  
+  const { data: release, isLoading: loadingRelease } = useRelease(releaseId)
+  const coverUrl = useCoverArtUrl(releaseId)
+  
+  const selectedAlbum: AlbumData | null = useMemo(() => {
+    if (!release && !releaseGroup) return null
+    
+    const tracks: MusicBrainzTrack[] = release?.media?.flatMap(m => m.tracks || []) || []
+    
+    const releaseData: MusicBrainzRelease = release || {
+      id: releaseGroup?.releases?.[0]?.id || selectedGroupId || '',
+      title: releaseGroup?.title || '',
+      date: releaseGroup?.['first-release-date'],
+      releaseGroup: { 
+        id: selectedGroupId || '', 
+        primaryType: releaseGroup?.['primary-type']
+      }
     }
-    setSearching(false)
-  }, [])
-
-  const selectAlbum = useCallback(async (group: MusicBrainzReleaseGroup) => {
-    setLoading(true)
-    try {
-      let actualRelease: MusicBrainzRelease | null = null
-      let tracks: MusicBrainzTrack[] = []
-
-      const fullRelease = await getReleaseGroup(group.id)
-      const release = fullRelease?.releases?.[0]
-
-      if (release?.id) {
-        const releaseDetails = await getRelease(release.id)
-        if (releaseDetails) {
-          actualRelease = releaseDetails
-          if (releaseDetails.media) {
-            for (const media of releaseDetails.media) {
-              if (media.tracks) {
-                tracks.push(...media.tracks)
-              }
-            }
-          }
-        }
-      }
-
-      let coverUrl = ''
-      if (actualRelease?.id) {
-        coverUrl = await getCoverArtUrl(actualRelease.id)
-      }
-
-      if (!actualRelease) {
-        actualRelease = {
-          id: release?.id || group.id,
-          title: group.title,
-          date: group['first-release-date'],
-          releaseGroup: { id: group.id, primaryType: group['primary-type'] }
-        }
-      }
-
-      setSelectedAlbum({
-        release: actualRelease,
-        coverUrl,
-        tracks
-      })
-    } catch (e) {
-      console.error('Failed to load album:', e)
+    
+    return {
+      release: releaseData,
+      coverUrl,
+      tracks
     }
-    setLoading(false)
-  }, [])
-
-  const clearSelection = useCallback(() => {
-    setSelectedAlbum(null)
-  }, [])
-
-  const loadAlbumById = useCallback(async (groupId: string) => {
-    setLoading(true)
-    setSearching(true)
-    try {
-      const groups = await searchReleases(`rgid:${groupId}`)
-      const group = groups.find(g => g.id === groupId) || groups[0]
-      if (group) {
-        await selectAlbum(group)
-      }
-    } catch (e) {
-      console.error('Failed to load album by id:', e)
-    }
-    setLoading(false)
-    setSearching(false)
-  }, [selectAlbum])
-
+  }, [release, releaseGroup, coverUrl, selectedGroupId])
+  
+  const search = (q: string) => setQuery(q)
+  
+  const selectAlbum = (group: MusicBrainzReleaseGroup) => {
+    setSelectedGroupId(group.id)
+  }
+  
+  const clearSelection = () => {
+    setSelectedGroupId(null)
+  }
+  
+  const loadAlbumById = (groupId: string) => {
+    setSelectedGroupId(groupId)
+  }
+  
   return {
-    results,
+    results: searchResults,
     selectedAlbum,
-    loading,
+    loading: loadingRelease,
     searching,
     search,
     selectAlbum,
