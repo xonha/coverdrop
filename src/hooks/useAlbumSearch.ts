@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { searchReleases, getReleaseGroup, getCoverArtUrl } from '../utils/musicbrainz'
+import { searchReleases, getReleaseGroup, getRelease, getCoverArtUrl } from '../utils/musicbrainz'
 import type { MusicBrainzReleaseGroup, MusicBrainzRelease, MusicBrainzTrack } from '../types/musicbrainz'
 
 export interface AlbumData {
@@ -18,6 +18,7 @@ export function useAlbumSearch() {
     if (!query.trim()) return
     setSearching(true)
     setResults([])
+    setSelectedAlbum(null)
     try {
       const groups = await searchReleases(query)
       setResults(groups)
@@ -30,18 +31,21 @@ export function useAlbumSearch() {
   const selectAlbum = useCallback(async (group: MusicBrainzReleaseGroup) => {
     setLoading(true)
     try {
-      const releases = group.releases || []
-      const release = releases[0]
+      let actualRelease: MusicBrainzRelease | null = null
+      let tracks: MusicBrainzTrack[] = []
 
       const fullRelease = await getReleaseGroup(group.id)
-      const actualRelease = fullRelease?.releases?.[0]
+      const release = fullRelease?.releases?.[0]
 
-      const tracks: MusicBrainzTrack[] = []
-      if (actualRelease?.media) {
-        for (const media of actualRelease.media) {
-          if (media.tracks) {
-            for (const track of media.tracks) {
-              tracks.push(track)
+      if (release?.id) {
+        const releaseDetails = await getRelease(release.id)
+        if (releaseDetails) {
+          actualRelease = releaseDetails
+          if (releaseDetails.media) {
+            for (const media of releaseDetails.media) {
+              if (media.tracks) {
+                tracks.push(...media.tracks)
+              }
             }
           }
         }
@@ -52,13 +56,17 @@ export function useAlbumSearch() {
         coverUrl = await getCoverArtUrl(actualRelease.id)
       }
 
-      setSelectedAlbum({
-        release: actualRelease || {
+      if (!actualRelease) {
+        actualRelease = {
           id: release?.id || group.id,
           title: group.title,
           date: release?.date,
           releaseGroup: { id: group.id, primaryType: group.primaryType }
-        },
+        }
+      }
+
+      setSelectedAlbum({
+        release: actualRelease,
         coverUrl,
         tracks
       })
