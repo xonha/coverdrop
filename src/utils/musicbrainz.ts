@@ -1,7 +1,7 @@
 import type { MusicBrainzReleaseGroup, MusicBrainzRelease } from '../types/musicbrainz'
 
 const BASE_URL = 'https://musicbrainz.org/ws/2'
-const COVERART_URL = 'http://coverartarchive.org'
+const COVERART_URL = 'https://coverartarchive.org'
 
 async function fetchWithUA<T>(url: string): Promise<T> {
   const res = await fetch(url, {
