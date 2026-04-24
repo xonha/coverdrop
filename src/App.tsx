@@ -1,15 +1,59 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SearchBar } from './components/SearchBar'
 import { AlbumList } from './components/AlbumList'
 import { AlbumPoster } from './components/AlbumPoster'
 import { useAlbumSearch } from './hooks/useAlbumSearch'
 import { exportToPDF } from './utils/pdfExport'
+import type { MusicBrainzReleaseGroup } from './types/musicbrainz'
+
+function getPathParam() {
+  const path = window.location.pathname
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const segment = path.replace(base, '').replace(/^\//, '')
+  const parts = segment.split('/')
+  return {
+    search: decodeURIComponent(parts[0] || ''),
+    albumId: parts[1] || ''
+  }
+}
+
+function setPathParam(value: string) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const url = new URL(window.location.href)
+  url.pathname = `${base}/${value}`
+  window.history.pushState({}, '', url.toString())
+}
 
 export default function App() {
-  const [query, setQuery] = useState('')
-  const { results, selectedAlbum, loading, searching, search, selectAlbum, clearSelection } = useAlbumSearch()
+  const [query, setQuery] = useState(getPathParam().search)
+  const { results, selectedAlbum, loading, searching, search, selectAlbum, clearSelection, loadAlbumById } = useAlbumSearch()
 
-  const handleSearch = () => search(query)
+  useEffect(() => {
+    const { search: q, albumId } = getPathParam()
+    if (q) {
+      setQuery(q)
+      search(q)
+    }
+    if (albumId) {
+      loadAlbumById(albumId)
+    }
+  }, [search, loadAlbumById])
+
+  const handleSearch = () => {
+    setPathParam(query)
+    search(query)
+  }
+
+  const handleSelectAlbum = (group: MusicBrainzReleaseGroup) => {
+    const albumPath = `${encodeURIComponent(query)}/${group.id}`
+    setPathParam(albumPath)
+    selectAlbum(group)
+  }
+
+  const handleClear = () => {
+    setPathParam(query)
+    clearSelection()
+  }
 
   const handleExport = async () => {
     if (!selectedAlbum) return
@@ -38,7 +82,7 @@ export default function App() {
 
             <AlbumList
               results={results}
-              onSelect={selectAlbum}
+              onSelect={handleSelectAlbum}
               loading={loading}
             />
 
@@ -50,7 +94,7 @@ export default function App() {
           <div className="space-y-6">
             <div className="flex gap-4">
               <button
-                onClick={clearSelection}
+                onClick={handleClear}
                 className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 ← Back

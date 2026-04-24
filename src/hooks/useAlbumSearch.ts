@@ -80,6 +80,22 @@ export function useAlbumSearch() {
     setSelectedAlbum(null)
   }, [])
 
+  const loadAlbumById = useCallback(async (groupId: string) => {
+    setLoading(true)
+    setSearching(true)
+    try {
+      const groups = await searchReleases(`rgid:${groupId}`)
+      const group = groups.find(g => g.id === groupId) || groups[0]
+      if (group) {
+        await selectAlbum(group)
+      }
+    } catch (e) {
+      console.error('Failed to load album by id:', e)
+    }
+    setLoading(false)
+    setSearching(false)
+  }, [selectAlbum])
+
   return {
     results,
     selectedAlbum,
@@ -87,6 +103,7 @@ export function useAlbumSearch() {
     searching,
     search,
     selectAlbum,
-    clearSelection
+    clearSelection,
+    loadAlbumById
   }
 }
