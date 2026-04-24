@@ -7,7 +7,7 @@ interface ExportOptions {
   tracks: MusicBrainzTrack[]
 }
 
-export function exportToPDF({ album, coverUrl, tracks }: ExportOptions) {
+export async function exportToPDF({ album, coverUrl, tracks }: ExportOptions) {
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -30,7 +30,15 @@ export function exportToPDF({ album, coverUrl, tracks }: ExportOptions) {
 
   if (coverUrl) {
     try {
-      pdf.addImage(coverUrl, 'JPEG', coverX, coverY, coverWidth, coverWidth)
+      const imgData = await fetch(coverUrl).then(r => r.blob())
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('Failed to read blob'))
+        reader.readAsDataURL(imgData)
+      })
+      const base64Data = base64.includes(',') ? base64.split(',')[1] : base64
+      pdf.addImage(base64Data, 'JPEG', coverX, coverY, coverWidth, coverWidth)
     } catch {
       pdf.setFillColor(50, 50, 50)
       pdf.rect(coverX, coverY, coverWidth, coverWidth, 'F')

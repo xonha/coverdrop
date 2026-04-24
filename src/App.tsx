@@ -11,9 +11,9 @@ export default function App() {
 
   const handleSearch = () => search(query)
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!selectedAlbum) return
-    exportToPDF({
+    await exportToPDF({
       album: selectedAlbum.release,
       coverUrl: selectedAlbum.coverUrl,
       tracks: selectedAlbum.tracks
