@@ -16,19 +16,13 @@ export function AlbumPoster({
   tracks,
   size = 600,
 }: AlbumPosterProps) {
-  const artistName =
-    album.artistCredit?.[0]?.name ||
-    album.artistCredit?.[0]?.artist?.name ||
-    "";
-  const releaseDate = album.date || "";
-
   return (
     <div
-      className="relative text-black overflow-hidden flex flex-col items-center"
+      className="relative text-white overflow-hidden flex flex-col items-center"
       style={{
         width: size,
         height: size * 1.414,
-        fontFamily: "'Roboto', sans-serif",
+        fontFamily: "Georgia, serif",
       }}
     >
       <PosterBackground coverUrl={coverUrl} />
@@ -38,7 +32,7 @@ export function AlbumPoster({
             <img
               src={coverUrl}
               alt={album.title}
-              className="h-auto object-cover pb-12"
+              className="h-auto object-cover pb-6"
             />
           ) : (
             <IconAlbumEmpty />
@@ -46,14 +40,10 @@ export function AlbumPoster({
         </div>
 
         <div className="w-full flex flex-col overflow-hidden">
-          <h1 className="text-2xl font-bold leading-tight mb-2 line-clamp-3 text-center">
-            {album.title.toUpperCase()}
+          <h1 className="text-2xl font-medium text-center">{album.title}</h1>
+          <h1 className="text-2xl font-medium pb-6 text-center">
+            Bring Me The Horizon
           </h1>
-          <h2 className="text-lg mb-4 text-center">{artistName}</h2>
-
-          {releaseDate && (
-            <p className="text-sm mb-4 text-center">Released: {releaseDate}</p>
-          )}
 
           <TrackList tracks={tracks} />
         </div>
@@ -64,7 +54,7 @@ export function AlbumPoster({
 
 function TrackList(p: { tracks: MusicBrainzTrack[] }) {
   return (
-    <div className="flex-1 overflow-hidden font-bold text-center">
+    <div className="flex-1 overflow-hidden font-normal tracking-wider text-center">
       {p.tracks.map((track, i) => {
         if (i === p.tracks.length - 1) return track.title;
         return track.title + " · ";
@@ -80,9 +70,9 @@ function PosterBackground(p: { coverUrl: string }) {
       <img
         src={p.coverUrl}
         alt=""
-        className="w-full h-full object-cover blur-xl scale-105"
+        className="w-full h-full object-cover blur-sm scale-105"
       />
-      <div className="absolute inset-0 z-10 bg-black/10 w-full h-full" />
+      <div className="absolute inset-0 z-10 bg-black/40 w-full h-full" />
     </div>
   );
 }
