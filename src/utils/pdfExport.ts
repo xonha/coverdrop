@@ -5,101 +5,110 @@ interface ExportOptions {
   album: MusicBrainzRelease
   coverUrl: string
   tracks: MusicBrainzTrack[]
+  coverContrast?: number
+  bgColor?: string
+  bgOpacity?: number
+  textColor?: string
+  titleSize?: number
+  artistSize?: number
+  tracksSize?: number
 }
 
-export async function exportToPDF({ album, coverUrl, tracks }: ExportOptions) {
+export async function exportToPDF({ album, coverUrl, tracks, coverContrast = 0, bgColor = "#000000", bgOpacity = 50, textColor = "#ffffff", titleSize = 24, artistSize = 16, tracksSize = 14 }: ExportOptions) {
   const pdf = new jsPDF({
     orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4'
+    unit: 'px',
+    format: [600, 848]
   })
 
-  const pageWidth = 210
-  const pageHeight = 297
-  const margin = 15
+  const canvas = document.createElement('canvas')
+  canvas.width = 600
+  canvas.height = 848
+  const ctx = canvas.getContext('2d')!
 
-  const artistName = album.artistCredit?.[0]?.name || album.artistCredit?.[0]?.artist?.name || ''
-  const releaseDate = album.date || ''
+  ctx.globalAlpha = bgOpacity / 100
+  ctx.fillStyle = bgColor
+  ctx.fillRect(0, 0, 600, 848)
+  ctx.globalAlpha = 1
 
-  pdf.setFillColor(30, 30, 30)
-  pdf.rect(0, 0, pageWidth, pageHeight, 'F')
-
-  const coverWidth = pageWidth / 2 - margin * 2
-  const coverX = margin
-  const coverY = margin + 10
+  const coverY = 72
+  const coverWidth = 600 - 144
 
   if (coverUrl) {
-    try {
-      const imgData = await fetch(coverUrl).then(r => r.blob())
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = () => reject(new Error('Failed to read blob'))
-        reader.readAsDataURL(imgData)
-      })
-      const base64Data = base64.includes(',') ? base64.split(',')[1] : base64
-      pdf.addImage(base64Data, 'JPEG', coverX, coverY, coverWidth, coverWidth)
-    } catch {
-      pdf.setFillColor(50, 50, 50)
-      pdf.rect(coverX, coverY, coverWidth, coverWidth, 'F')
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    await new Promise<void>((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = reject
+      img.src = coverUrl
+    })
+
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = coverWidth
+    tempCanvas.height = coverWidth
+    const tempCtx = tempCanvas.getContext('2d')!
+    tempCtx.drawImage(img, 0, 0, coverWidth, coverWidth)
+
+    if (coverContrast !== 0) {
+      const imageData = tempCtx.getImageData(0, 0, coverWidth, coverWidth)
+      const data = imageData.data
+      const factor = (259 * (coverContrast + 255)) / (255 * (259 - coverContrast))
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, Math.max(0, factor * (data[i] - 128) + 128))
+        data[i + 1] = Math.min(255, Math.max(0, factor * (data[i + 1] - 128) + 128))
+        data[i + 2] = Math.min(255, Math.max(0, factor * (data[i + 2] - 128) + 128))
+      }
+      tempCtx.putImageData(imageData, 0, 0)
     }
-  } else {
-    pdf.setFillColor(50, 50, 50)
-    pdf.rect(coverX, coverY, coverWidth, coverWidth, 'F')
+
+    ctx.drawImage(tempCanvas, 72, coverY)
   }
 
-  const contentX = pageWidth / 2 + margin
-  const contentWidth = pageWidth / 2 - margin * 2
-
-  pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(22)
-  pdf.setFont('helvetica', 'bold')
+  ctx.fillStyle = textColor
+  ctx.textAlign = 'center'
+  ctx.font = `bold ${titleSize}px Georgia, serif`
 
   const title = album.title || 'Untitled'
-  const titleLines = pdf.splitTextToSize(title, contentWidth)
-  pdf.text(titleLines, contentX, margin + 20)
+  wrapText(ctx, title, 300, coverY + coverWidth + 30, 600 - 144, titleSize * 1.3)
 
-  let yPos = margin + 32
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'normal')
-  pdf.setTextColor(150, 150, 150)
-  pdf.text(artistName, contentX, yPos)
-
-  yPos += 8
-
-  if (releaseDate) {
-    pdf.setFontSize(10)
-    pdf.setTextColor(100, 100, 100)
-    pdf.text(`Released: ${releaseDate}`, contentX, yPos)
-    yPos += 8
+  const artistName = album.artistCredit?.[0]?.name || album.artistCredit?.[0]?.artist?.name || ''
+  if (artistName) {
+    ctx.font = `${artistSize}px Georgia, serif`
+    ctx.fillText(artistName, 300, coverY + coverWidth + 52)
   }
 
-  yPos += 10
-  pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Tracklist', contentX, yPos)
+  const displayTracks = tracks.length > 0 ? tracks.slice(0, 15) : []
+  if (displayTracks.length > 0) {
+    ctx.font = `${tracksSize}px Georgia, serif`
+    let yPos = coverY + coverWidth + 80
+    displayTracks.forEach((track) => {
+      const trackName = track.recording?.title || track.title || 'Untitled'
+      ctx.fillText(trackName + ' · ', 300, yPos)
+      yPos += tracksSize * 1.3
+    })
+  }
 
-  pdf.setDrawColor(80, 80, 80)
-  pdf.line(contentX, yPos + 2, contentX + contentWidth, yPos + 2)
-
-  yPos += 8
-  pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
-  pdf.setTextColor(180, 180, 180)
-
-  const displayTracks = tracks.length > 0 ? tracks : []
-  displayTracks.slice(0, 18).forEach((track, idx) => {
-    if (yPos > pageHeight - margin) return
-    const trackName = track.recording?.title || track.title || 'Untitled'
-    pdf.text(`${idx + 1}. ${trackName.slice(0, 50)}`, contentX, yPos)
-    yPos += 6
-  })
-
-  pdf.setFontSize(8)
-  pdf.setTextColor(80, 80, 80)
-  pdf.text('Generated with CoverDrop', margin, pageHeight - margin / 2)
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.95)
+  pdf.addImage(dataUrl, 'JPEG', 0, 0, 600, 848)
 
   const filename = `${artistName || 'unknown'}-${album.title || 'poster'}`.replace(/[^a-z0-9]/gi, '-')
   pdf.save(`${filename}.pdf`)
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  const words = text.split(' ')
+  let line = ''
+  let currentY = y
+  for (const word of words) {
+    const testLine = line + word + ' '
+    const metrics = ctx.measureText(testLine)
+    if (metrics.width > maxWidth && line !== '') {
+      ctx.fillText(line.trim(), x, currentY)
+      line = word + ' '
+      currentY += lineHeight
+    } else {
+      line = testLine
+    }
+  }
+  ctx.fillText(line.trim(), x, currentY)
 }

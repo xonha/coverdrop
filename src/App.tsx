@@ -18,6 +18,14 @@ export default function App() {
     clearSelection,
   } = useAlbumSearch();
 
+  const [coverContrast, setCoverContrast] = useState(0);
+  const [bgColor, setBgColor] = useState("#000000");
+  const [bgOpacity, setBgOpacity] = useState(50);
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [titleSize, setTitleSize] = useState(24);
+  const [artistSize, setArtistSize] = useState(16);
+  const [tracksSize, setTracksSize] = useState(14);
+
   const handleSearch = () => {
     search(query);
   };
@@ -36,6 +44,13 @@ export default function App() {
       album: selectedAlbum.release,
       coverUrl: selectedAlbum.coverUrl,
       tracks: selectedAlbum.tracks,
+      coverContrast,
+      bgColor,
+      bgOpacity,
+      textColor,
+      titleSize,
+      artistSize,
+      tracksSize,
     });
   };
 
@@ -87,6 +102,13 @@ export default function App() {
                   coverUrl={selectedAlbum.coverUrl}
                   tracks={selectedAlbum.tracks}
                   size={600}
+                  coverContrast={coverContrast}
+                  bgColor={bgColor}
+                  bgOpacity={bgOpacity}
+                  textColor={textColor}
+                  titleSize={titleSize}
+                  artistSize={artistSize}
+                  tracksSize={tracksSize}
                 />
               </div>
             </div>

@@ -12,6 +12,13 @@ interface AlbumPosterProps {
   coverUrl: string;
   tracks: MusicBrainzTrack[];
   size?: number;
+  coverContrast?: number;
+  bgColor?: string;
+  bgOpacity?: number;
+  textColor?: string;
+  titleSize?: number;
+  artistSize?: number;
+  tracksSize?: number;
 }
 
 export function AlbumPoster({
@@ -19,14 +26,21 @@ export function AlbumPoster({
   coverUrl,
   tracks,
   size = 600,
+  coverContrast: externalContrast,
+  bgColor: externalBgColor,
+  bgOpacity: externalBgOpacity,
+  textColor: externalTextColor,
+  titleSize: externalTitleSize,
+  artistSize: externalArtistSize,
+  tracksSize: externalTracksSize,
 }: AlbumPosterProps) {
-  const [coverContrast, setCoverContrast] = useState(0);
-  const [bgColor, setBgColor] = useState("#000000");
-  const [bgOpacity, setBgOpacity] = useState(50);
-  const [textColor, setTextColor] = useState("#ffffff");
-  const [titleSize, setTitleSize] = useState(24);
-  const [artistSize, setArtistSize] = useState(16);
-  const [tracksSize, setTracksSize] = useState(14);
+  const [coverContrast, setCoverContrast] = useState(externalContrast ?? 0);
+  const [bgColor, setBgColor] = useState(externalBgColor ?? "#000000");
+  const [bgOpacity, setBgOpacity] = useState(externalBgOpacity ?? 50);
+  const [textColor, setTextColor] = useState(externalTextColor ?? "#ffffff");
+  const [titleSize, setTitleSize] = useState(externalTitleSize ?? 24);
+  const [artistSize, setArtistSize] = useState(externalArtistSize ?? 16);
+  const [tracksSize, setTracksSize] = useState(externalTracksSize ?? 14);
 
   return (
     <div
