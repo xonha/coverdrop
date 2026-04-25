@@ -23,6 +23,10 @@ export function AlbumPoster({
   const [coverContrast, setCoverContrast] = useState(0);
   const [bgColor, setBgColor] = useState("#000000");
   const [bgOpacity, setBgOpacity] = useState(50);
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [titleSize, setTitleSize] = useState(24);
+  const [artistSize, setArtistSize] = useState(16);
+  const [tracksSize, setTracksSize] = useState(14);
 
   return (
     <div
@@ -30,11 +34,12 @@ export function AlbumPoster({
       style={{ width: size + 200, height: size * 1.414 }}
     >
       <div
-        className="relative text-white overflow-hidden flex flex-col items-center"
+        className="relative overflow-hidden flex flex-col items-center"
         style={{
           width: size,
           height: size * 1.414,
           fontFamily: "Georgia, serif",
+          color: textColor,
         }}
       >
         <PosterBackground
@@ -53,9 +58,10 @@ export function AlbumPoster({
           </div>
 
           <div className="w-full flex flex-col overflow-hidden">
-            <h1 className="text-2xl font-medium text-center">{album.title}</h1>
+            <h1 className="font-medium text-center" style={{ fontSize: titleSize }}>{album.title}</h1>
+            <p className="text-center mt-2" style={{ fontSize: artistSize }}>{album.artistCredit?.[0]?.name}</p>
             <div className="mt-4">
-              <TrackList tracks={tracks} />
+              <TrackList tracks={tracks} fontSize={tracksSize} />
             </div>
           </div>
         </div>
@@ -81,6 +87,35 @@ export function AlbumPoster({
             onChange: (v) => setBgOpacity(v as number),
             min: 0,
             max: 100,
+          },
+          {
+            label: "Text Color",
+            value: textColor,
+            onChange: (v) => setTextColor(v as string),
+          },
+          {
+            label: "Title Size",
+            value: titleSize,
+            onChange: (v) => setTitleSize(v as number),
+            min: 8,
+            max: 72,
+            type: "number",
+          },
+          {
+            label: "Artist Size",
+            value: artistSize,
+            onChange: (v) => setArtistSize(v as number),
+            min: 8,
+            max: 72,
+            type: "number",
+          },
+          {
+            label: "Tracks Size",
+            value: tracksSize,
+            onChange: (v) => setTracksSize(v as number),
+            min: 8,
+            max: 72,
+            type: "number",
           },
         ]}
       />

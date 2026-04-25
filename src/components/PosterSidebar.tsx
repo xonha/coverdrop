@@ -4,6 +4,7 @@ interface SidebarSection {
   onChange: (v: number | string) => void;
   min?: number;
   max?: number;
+  type?: "range" | "number";
 }
 
 interface PosterSidebarProps {
@@ -23,6 +24,22 @@ export function PosterSidebar({ sections }: PosterSidebarProps) {
               onChange={(e) => section.onChange(e.target.value)}
               className="w-full h-8 cursor-pointer"
             />
+          ) : section.type === "number" ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => section.onChange(Math.max(section.min ?? 0, (section.value as number) - 1))}
+                className="w-6 h-6 bg-gray-800 text-white rounded hover:bg-gray-700"
+              >
+                -
+              </button>
+              <span className="flex-1 text-xs text-gray-400 text-center">{section.value}px</span>
+              <button
+                onClick={() => section.onChange(Math.min(section.max ?? 100, (section.value as number) + 1))}
+                className="w-6 h-6 bg-gray-800 text-white rounded hover:bg-gray-700"
+              >
+                +
+              </button>
+            </div>
           ) : (
             <>
               <input
