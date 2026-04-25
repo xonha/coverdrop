@@ -26,10 +26,8 @@ export async function exportToPDF({ album, coverUrl, tracks, coverContrast = 0, 
   canvas.height = 848
   const ctx = canvas.getContext('2d')!
 
-  ctx.globalAlpha = bgOpacity / 100
   ctx.fillStyle = bgColor
   ctx.fillRect(0, 0, 600, 848)
-  ctx.globalAlpha = 1
 
   const coverY = 72
   const coverWidth = 600 - 144
@@ -43,14 +41,32 @@ export async function exportToPDF({ album, coverUrl, tracks, coverContrast = 0, 
       img.src = coverUrl
     })
 
-    const tempCanvas = document.createElement('canvas')
-    tempCanvas.width = coverWidth
-    tempCanvas.height = coverWidth
-    const tempCtx = tempCanvas.getContext('2d')!
-    tempCtx.drawImage(img, 0, 0, coverWidth, coverWidth)
+    const blurCanvas = document.createElement('canvas')
+    blurCanvas.width = 600
+    blurCanvas.height = 848
+    const blurCtx = blurCanvas.getContext('2d')!
+    blurCtx.filter = 'blur(4px)'
+    blurCtx.drawImage(img, 72, coverY, coverWidth, coverWidth)
+
+    ctx.drawImage(blurCanvas, 0, 0)
 
     if (coverContrast !== 0) {
-      const imageData = tempCtx.getImageData(0, 0, coverWidth, coverWidth)
+      ctx.globalCompositeOperation = 'source-over'
+    }
+
+    ctx.globalAlpha = bgOpacity / 100
+    ctx.fillStyle = bgColor
+    ctx.fillRect(0, 0, 600, 848)
+    ctx.globalAlpha = 1
+
+    const mainCanvas = document.createElement('canvas')
+    mainCanvas.width = coverWidth
+    mainCanvas.height = coverWidth
+    const mainCtx = mainCanvas.getContext('2d')!
+    mainCtx.drawImage(img, 0, 0, coverWidth, coverWidth)
+
+    if (coverContrast !== 0) {
+      const imageData = mainCtx.getImageData(0, 0, coverWidth, coverWidth)
       const data = imageData.data
       const factor = (259 * (coverContrast + 255)) / (255 * (259 - coverContrast))
       for (let i = 0; i < data.length; i += 4) {
@@ -58,10 +74,10 @@ export async function exportToPDF({ album, coverUrl, tracks, coverContrast = 0, 
         data[i + 1] = Math.min(255, Math.max(0, factor * (data[i + 1] - 128) + 128))
         data[i + 2] = Math.min(255, Math.max(0, factor * (data[i + 2] - 128) + 128))
       }
-      tempCtx.putImageData(imageData, 0, 0)
+      mainCtx.putImageData(imageData, 0, 0)
     }
 
-    ctx.drawImage(tempCanvas, 72, coverY)
+    ctx.drawImage(mainCanvas, 72, coverY)
   }
 
   ctx.fillStyle = textColor
